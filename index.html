@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>롤링페이퍼</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Nanum+Pen+Script&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#fbf7f0; --ink:#2f2a25; --muted:#8a8178; --line:#e8dfd2; --accent:#e2674a;
+    --c0:#fff3b0; --c1:#ffd6dc; --c2:#cfe8ff; --c3:#d4f2d2; --c4:#e6dafc; --c5:#ffe0c2;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--bg);
+    background-image:radial-gradient(#e9e0d2 1px, transparent 1px);
+    background-size:22px 22px;
+    color:var(--ink); font-family:"Gowun Dodum",system-ui,sans-serif;
+    min-height:100vh; padding-bottom:110px;
+  }
+  header{max-width:1100px;margin:0 auto;padding:36px 20px 10px;text-align:center}
+  h1{font-family:"Nanum Pen Script",cursive;font-weight:400;font-size:clamp(44px,9vw,72px);line-height:1;margin:0;word-break:keep-all}
+  .sub{font-size:16px;color:var(--muted);margin-top:10px;white-space:pre-wrap;word-break:keep-all}
+  .meta-row{margin-top:12px;display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+  .chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:4px 12px}
+  button{font-family:inherit;cursor:pointer}
+  .ghost{background:none;border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:13px;color:var(--muted)}
+  .ghost:hover{background:#fff}
+  .notice{max-width:640px;margin:14px auto 0;padding:12px 16px;border-radius:12px;background:#fff;border:1px dashed #d9c8b2;font-size:14px;color:#6b5f53;text-align:center;display:none}
+  .notice.show{display:block}
+  main{max-width:1100px;margin:18px auto 0;padding:0 16px;columns:260px;column-gap:18px}
+  .note{
+    break-inside:avoid; margin:0 0 18px; padding:30px 18px 14px; border-radius:6px;
+    box-shadow:0 1px 2px rgba(0,0,0,.06),0 6px 16px rgba(80,60,30,.10);
+    position:relative; transform:rotate(var(--r,0deg)); transition:transform .15s;
+    display:inline-block; width:100%;
+  }
+  .note:hover{transform:rotate(0) scale(1.01)}
+  .note::before{content:"";position:absolute;top:-9px;left:50%;width:70px;height:20px;transform:translateX(-50%) rotate(-2deg);background:rgba(255,255,255,.55);box-shadow:0 1px 2px rgba(0,0,0,.06)}
+  .note .text{font-family:"Nanum Pen Script",cursive;font-size:25px;line-height:1.25;white-space:pre-wrap;word-break:break-word}
+  .note .from{margin-top:10px;text-align:right;font-size:14px;color:#5d544b}
+  .note .mine{position:absolute;top:8px;left:10px;font-size:11px;color:#7a6e62;background:rgba(255,255,255,.6);border-radius:999px;padding:1px 8px}
+  .note .del{position:absolute;top:6px;right:6px;border:none;background:rgba(255,255,255,.6);width:26px;height:26px;border-radius:50%;font-size:14px;color:#7a6e62;display:none}
+  .owner .note .del{display:block}
+  .note .edit{position:absolute;top:6px;right:6px;border:none;background:rgba(255,255,255,.7);border-radius:999px;font-size:12px;padding:4px 10px;color:#5d544b}
+  .owner .note .edit{right:38px}
+  .empty{column-span:all;text-align:center;color:var(--muted);padding:60px 10px;font-size:16px}
+  .empty b{display:block;font-family:"Nanum Pen Script",cursive;font-size:34px;font-weight:400;color:var(--ink);margin-bottom:6px}
+  .fab{
+    position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
+    background:var(--accent);color:#fff;border:none;border-radius:999px;padding:15px 28px;font-size:17px;
+    box-shadow:0 8px 24px rgba(226,103,74,.35);display:none;white-space:nowrap
+  }
+  .fab.show{display:block}
+  .backdrop{position:fixed;inset:0;background:rgba(40,30,20,.35);display:none;align-items:flex-end;justify-content:center;z-index:10}
+  .backdrop.show{display:flex}
+  @media(min-width:640px){.backdrop{align-items:center}}
+  .sheet{background:#fff;width:100%;max-width:520px;border-radius:20px 20px 0 0;padding:22px 20px calc(20px + env(safe-area-inset-bottom,0px));max-height:92vh;overflow:auto}
+  @media(min-width:640px){.sheet{border-radius:20px}}
+  .sheet h2{margin:0 0 14px;font-size:19px}
+  label{display:block;font-size:13px;color:var(--muted);margin:12px 0 6px}
+  input[type=text],textarea{width:100%;font-family:inherit;font-size:16px;border:1px solid var(--line);border-radius:12px;padding:11px 12px;background:#fffdf9;color:var(--ink)}
+  textarea{min-height:150px;resize:vertical;font-family:"Nanum Pen Script",cursive;font-size:24px;line-height:1.25}
+  .count{font-size:12px;color:var(--muted);text-align:right;margin-top:4px}
+  .swatches{display:flex;gap:10px;flex-wrap:wrap}
+  .sw{width:34px;height:34px;border-radius:50%;border:2px solid transparent;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
+  .sw.on{border-color:var(--ink)}
+  .actions{display:flex;gap:8px;margin-top:18px;align-items:center}
+  .actions .spacer{flex:1}
+  .btn{border:none;border-radius:12px;padding:12px 18px;font-size:15px}
+  .btn.primary{background:var(--accent);color:#fff}
+  .btn.primary:disabled{opacity:.5}
+  .btn.plain{background:#f3ede4;color:var(--ink)}
+  .btn.danger{background:none;color:#b4442c;padding-left:4px}
+  .err{color:#b4442c;font-size:13px;margin-top:10px;min-height:1em}
+  .toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:999px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20}
+  .toast.show{opacity:1}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title">롤링페이퍼</h1>
+  <div class="sub" id="subtitle">마음을 담아 한 마디씩 남겨 주세요</div>
+  <div class="meta-row">
+    <span class="chip" id="countChip">0개의 메시지</span>
+    <button class="ghost" id="editBoardBtn" style="display:none">제목 바꾸기</button>
+  </div>
+  <div class="notice" id="notice"></div>
+</header>
+
+<main id="board"></main>
+
+<button class="fab" id="fab">✏️ 글 남기기</button>
+
+<!-- 글쓰기 -->
+<div class="backdrop" id="noteModal">
+  <div class="sheet" role="dialog" aria-modal="true">
+    <h2 id="noteModalTitle">메시지 남기기</h2>
+    <label for="msg">메시지</label>
+    <textarea id="msg" maxlength="500" placeholder="하고 싶은 말을 적어 주세요"></textarea>
+    <div class="count"><span id="msgCount">0</span>/500</div>
+    <label for="sig">보내는 사람</label>
+    <input type="text" id="sig" maxlength="20" placeholder="이름 또는 닉네임 (비워두면 익명)">
+    <label>종이 색</label>
+    <div class="swatches" id="swatches"></div>
+    <div class="err" id="noteErr"></div>
+    <div class="actions">
+      <button class="btn danger" id="deleteMine" style="display:none">내 글 지우기</button>
+      <span class="spacer"></span>
+      <button class="btn plain" data-close>취소</button>
+      <button class="btn primary" id="saveNote">붙이기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 제목 편집 (주인만) -->
+<div class="backdrop" id="boardModal">
+  <div class="sheet" role="dialog" aria-modal="true">
+    <h2>롤링페이퍼 꾸미기</h2>
+    <label for="bTitle">제목</label>
+    <input type="text" id="bTitle" maxlength="40" placeholder="예: 민지야 생일 축하해!">
+    <label for="bSub">안내 문구</label>
+    <input type="text" id="bSub" maxlength="80" placeholder="예: 마음을 담아 한 마디씩 남겨 주세요">
+    <div class="err" id="boardErr"></div>
+    <div class="actions">
+      <span class="spacer"></span>
+      <button class="btn plain" data-close>취소</button>
+      <button class="btn primary" id="saveBoard">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 삭제 확인 -->
+<div class="backdrop" id="confirmModal">
+  <div class="sheet" role="dialog" aria-modal="true">
+    <h2 id="confirmText">이 메시지를 지울까요?</h2>
+    <div class="actions">
+      <span class="spacer"></span>
+      <button class="btn plain" data-close>취소</button>
+      <button class="btn primary" id="confirmYes">지우기</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<footer style="text-align:center;margin:30px 0 0;font-size:12px"><button class="ghost" id="adminBtn">관리</button></footer>
+
+<div class="backdrop" id="adminModal">
+  <div class="sheet" role="dialog" aria-modal="true">
+    <h2>관리자 로그인</h2>
+    <label for="adminCode">관리자 코드</label>
+    <input type="text" id="adminCode" autocomplete="off" autocapitalize="off">
+    <div class="err" id="adminErr"></div>
+    <div class="actions">
+      <button class="btn danger" id="adminLogout" style="display:none">관리 모드 끄기</button>
+      <span class="spacer"></span>
+      <button class="btn plain" data-close>취소</button>
+      <button class="btn primary" id="adminLogin">확인</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ====== 설정: Supabase 주소와 키 (공개용 키라서 페이지에 넣어도 괜찮아요) ======
+const SUPABASE_URL = "https://zglxbvenuluzimvomsnf.supabase.co";
+const SUPABASE_KEY = "sb_publishable_c1CT0bmCyy0QqnsF7NdZ-Q_DdyuO0PJ";
+// ==========================================================================
+
+(() => {
+  const COLORS = ["--c0","--c1","--c2","--c3","--c4","--c5"];
+  const DEFAULT_TITLE = "롤링페이퍼";
+  const DEFAULT_SUB = "마음을 담아 한 마디씩 남겨 주세요";
+  const $ = id => document.getElementById(id);
+
+  let notes = [], chosenColor = 0, editingId = null, pendingDelete = null;
+  let adminCode = null;
+  let board = {title:"", subtitle:""};
+
+  // ---------- 저장소 (내 글 토큰, 관리자 코드) ----------
+  function lsGet(k, d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } }
+  function lsSet(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+  let myTokens = lsGet("rp_tokens", {});   // {noteId: token}
+  adminCode = lsGet("rp_admin", null);
+
+  // ---------- Supabase 호출 ----------
+  async function rpc(fn, args){
+    const headers = {"Content-Type":"application/json", "apikey":SUPABASE_KEY};
+    if(!SUPABASE_KEY.startsWith("sb_")) headers["Authorization"] = "Bearer " + SUPABASE_KEY;
+    const r = await fetch(SUPABASE_URL.replace(/\/+$/,"") + "/rest/v1/rpc/" + fn, {
+      method:"POST", headers, body: JSON.stringify(args||{})
+    });
+    const txt = await r.text();
+    let data = null; try{ data = txt ? JSON.parse(txt) : null; }catch(e){}
+    if(!r.ok){ const err = new Error((data && data.message) || ("HTTP " + r.status)); err.status=r.status; throw err; }
+    return data;
+  }
+
+  // ---------- 화면 도우미 ----------
+  function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),1800); }
+  function notice(msg){ const n=$("notice"); if(msg){n.textContent=msg;n.classList.add("show");} else {n.textContent="";n.classList.remove("show");} }
+  function open(id){ $(id).classList.add("show"); }
+  function close(id){ $(id).classList.remove("show"); }
+  document.querySelectorAll(".backdrop").forEach(b=>{
+    b.addEventListener("click",e=>{ if(e.target===b || e.target.hasAttribute("data-close")) b.classList.remove("show"); });
+  });
+  function rot(id){ let h=0; for(const c of String(id)) h=(h*31+c.charCodeAt(0))|0; return ((Math.abs(h)%7)-3)*0.6; }
+  function str(v,max){ return typeof v==="string" ? v.slice(0,max) : ""; }
+  function colorIdx(v){ const n=Number(v); return Number.isInteger(n)&&n>=0&&n<COLORS.length ? n : 0; }
+
+  // ---------- 그리기 ----------
+  function renderBoard(){
+    const el=$("board"); el.textContent="";
+    $("countChip").textContent = notes.length + "개의 메시지";
+    document.body.classList.toggle("owner", !!adminCode);
+    $("editBoardBtn").style.display = adminCode ? "inline-block" : "none";
+    if(!notes.length){
+      const e=document.createElement("div"); e.className="empty";
+      const b=document.createElement("b"); b.textContent="아직 비어 있어요";
+      e.appendChild(b); e.appendChild(document.createTextNode("첫 번째 메시지를 남겨 주세요!"));
+      el.appendChild(e); return;
+    }
+    for(const n of notes){
+      const card=document.createElement("article"); card.className="note";
+      card.style.background=`var(${COLORS[colorIdx(n.color)]})`;
+      card.style.setProperty("--r", rot(n.id)+"deg");
+      const mine = !!myTokens[n.id];
+      if(mine){
+        const m=document.createElement("span"); m.className="mine"; m.textContent="내 글"; card.appendChild(m);
+        const ed=document.createElement("button"); ed.className="edit"; ed.textContent="수정";
+        ed.addEventListener("click",()=>openEditor(n)); card.appendChild(ed);
+      }
+      const tx=document.createElement("div"); tx.className="text"; tx.textContent=str(n.body,500);
+      const fr=document.createElement("div"); fr.className="from"; fr.textContent="- " + (str(n.name,20).trim() || "익명");
+      card.appendChild(tx); card.appendChild(fr);
+      if(adminCode){
+        const del=document.createElement("button"); del.className="del"; del.textContent="✕"; del.title="삭제";
+        del.addEventListener("click",()=>{ pendingDelete=n.id; $("confirmText").textContent="이 메시지를 지울까요?"; open("confirmModal"); });
+        card.appendChild(del);
+      }
+      el.appendChild(card);
+    }
+  }
+  function applyBoard(){
+    const t=str(board.title,40).trim()||DEFAULT_TITLE, s=str(board.subtitle,80).trim()||DEFAULT_SUB;
+    $("title").textContent=t; $("subtitle").textContent=s; document.title=t;
+  }
+
+  // ---------- 불러오기 (8초마다 새로고침) ----------
+  let loadedOnce=false;
+  async function load(){
+    try{
+      const [list, b] = await Promise.all([rpc("list_notes"), rpc("get_board")]);
+      notes = Array.isArray(list) ? list : [];
+      if(Array.isArray(b) && b[0]) { board=b[0]; applyBoard(); }
+      // 지워진 글의 토큰 정리
+      const ids=new Set(notes.map(n=>n.id)); let changed=false;
+      for(const k of Object.keys(myTokens)) if(!ids.has(k)){ delete myTokens[k]; changed=true; }
+      if(changed) lsSet("rp_tokens", myTokens);
+      loadedOnce=true; notice("");
+      renderBoard();
+    }catch(e){
+      notice(loadedOnce ? "연결이 잠시 끊겼어요. 자동으로 다시 시도할게요." : "메시지를 불러오지 못했어요. 잠시 후 새로고침해 주세요.");
+    }
+  }
+  setInterval(()=>{ if(document.visibilityState==="visible") load(); }, 8000);
+  document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") load(); });
+
+  // ---------- 글쓰기 / 수정 ----------
+  function buildSwatches(){
+    const w=$("swatches"); w.textContent="";
+    COLORS.forEach((c,i)=>{
+      const b=document.createElement("button"); b.type="button"; b.className="sw"+(i===chosenColor?" on":"");
+      b.style.background=`var(${c})`; b.setAttribute("aria-label","색 "+(i+1));
+      b.addEventListener("click",()=>{ chosenColor=i; buildSwatches(); });
+      w.appendChild(b);
+    });
+  }
+  function openEditor(n){
+    editingId = n ? n.id : null;
+    $("msg").value = n ? str(n.body,500) : "";
+    $("sig").value = n ? str(n.name,20) : lsGet("rp_lastname","");
+    chosenColor = n ? colorIdx(n.color) : Math.floor(Math.random()*COLORS.length);
+    $("noteModalTitle").textContent = n ? "내 메시지 수정" : "메시지 남기기";
+    $("saveNote").textContent = n ? "수정하기" : "붙이기";
+    $("deleteMine").style.display = n ? "inline-block" : "none";
+    $("msgCount").textContent=$("msg").value.length; $("noteErr").textContent="";
+    buildSwatches(); open("noteModal");
+    setTimeout(()=>$("msg").focus(),50);
+  }
+  $("fab").classList.add("show");
+  $("fab").textContent="✏️ 글 남기기";
+  $("fab").addEventListener("click",()=>openEditor(null));
+  $("msg").addEventListener("input",()=>{ $("msgCount").textContent=$("msg").value.length; });
+
+  let saving=false;
+  $("saveNote").addEventListener("click", async ()=>{
+    if(saving) return;
+    const body=$("msg").value.trim(), name=$("sig").value.trim().slice(0,20);
+    if(!body){ $("noteErr").textContent="메시지를 적어 주세요."; return; }
+    saving=true; $("saveNote").disabled=true; $("noteErr").textContent="";
+    try{
+      if(editingId){
+        const ok = await rpc("update_note",{p_id:editingId, p_token:myTokens[editingId], p_body:body.slice(0,500), p_name:name, p_color:chosenColor});
+        if(ok!==true) throw new Error("not allowed");
+        toast("수정했어요");
+      }else{
+        const res = await rpc("add_note",{p_body:body.slice(0,500), p_name:name, p_color:chosenColor});
+        const row = Array.isArray(res) ? res[0] : null;
+        if(row && row.id){ myTokens[row.id]=row.token; lsSet("rp_tokens", myTokens); }
+        lsSet("rp_lastname", name);
+        toast("붙였어요! 🎉");
+      }
+      close("noteModal"); await load();
+    }catch(e){
+      $("noteErr").textContent = /full/.test(e.message) ? "롤링페이퍼가 가득 찼어요." : "저장하지 못했어요. 잠시 후 다시 시도해 주세요.";
+    }finally{ saving=false; $("saveNote").disabled=false; }
+  });
+  $("deleteMine").addEventListener("click",()=>{ pendingDelete=editingId; $("confirmText").textContent="내 메시지를 지울까요?"; close("noteModal"); open("confirmModal"); });
+  $("confirmYes").addEventListener("click", async ()=>{
+    const id=pendingDelete; pendingDelete=null; close("confirmModal");
+    if(!id) return;
+    try{
+      const ok = await rpc("delete_note",{p_id:id, p_secret: myTokens[id] || adminCode || ""});
+      if(ok!==true) throw new Error("not allowed");
+      delete myTokens[id]; lsSet("rp_tokens", myTokens);
+      toast("지웠어요"); await load();
+    }catch(e){ toast("지우지 못했어요"); }
+  });
+
+  // ---------- 관리자 ----------
+  $("adminBtn").addEventListener("click",()=>{
+    $("adminCode").value=""; $("adminErr").textContent="";
+    $("adminLogout").style.display = adminCode ? "inline-block" : "none";
+    open("adminModal");
+  });
+  $("adminLogin").addEventListener("click", async ()=>{
+    const code=$("adminCode").value.trim();
+    if(!code) return;
+    try{
+      const ok = await rpc("is_admin",{p_code:code});
+      if(ok===true){ adminCode=code; lsSet("rp_admin",code); close("adminModal"); toast("관리 모드 켜짐"); renderBoard(); }
+      else $("adminErr").textContent="코드가 맞지 않아요.";
+    }catch(e){ $("adminErr").textContent="확인하지 못했어요. 다시 시도해 주세요."; }
+  });
+  $("adminLogout").addEventListener("click",()=>{ adminCode=null; lsSet("rp_admin",null); close("adminModal"); toast("관리 모드 꺼짐"); renderBoard(); });
+
+  $("editBoardBtn").addEventListener("click",()=>{
+    $("bTitle").value=str(board.title,40); $("bSub").value=str(board.subtitle,80); $("boardErr").textContent="";
+    open("boardModal");
+  });
+  $("saveBoard").addEventListener("click", async ()=>{
+    $("saveBoard").disabled=true;
+    try{
+      const ok = await rpc("set_board",{p_code:adminCode, p_title:$("bTitle").value.trim().slice(0,40), p_subtitle:$("bSub").value.trim().slice(0,80)});
+      if(ok!==true) throw new Error("no");
+      close("boardModal"); toast("저장했어요"); await load();
+    }catch(e){ $("boardErr").textContent="저장하지 못했어요. 관리자 코드를 다시 확인해 주세요."; }
+    finally{ $("saveBoard").disabled=false; }
+  });
+
+  // ---------- 시작 ----------
+  renderBoard();
+  if(SUPABASE_URL.startsWith("__")) notice("아직 Supabase 주소와 키가 설정되지 않았어요.");
+  else load();
+})();
+</script>
+</body>
+</html>
